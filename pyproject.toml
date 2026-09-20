@@ -1,0 +1,29 @@
+[project]
+name = "agenticautomation"
+version = "0.1.0"
+description = "Agentic document processing workflow: S3/local file drop → Bedrock model invocation → structured extraction → UI dashboard"
+readme = "README.md"
+authors = [
+    { name = "Mohan", email = "mohanrajt05@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "flask>=3.0.0",
+    "flask-cors>=5.0.0",
+    "boto3>=1.34.0",
+    "python-dateutil>=2.8.2",
+    "gunicorn>=22.0.0",
+]
+
+[project.scripts]
+agenticautomation = "agenticautomation:main"
+agenticAutomation = "agenticautomation:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"

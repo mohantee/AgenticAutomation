@@ -1,0 +1,77 @@
+MASTER SERVICES AGREEMENT
+
+This Master Services Agreement ("Agreement") is entered into as of January 15, 2026
+("Effective Date") by and between:
+
+PARTY A: AgenticAutomation Inc., a Delaware corporation with principal offices at
+100 Main Street, San Francisco, California 94102 ("Client")
+
+PARTY B: Quantum AI Solutions Ltd., a company incorporated under the laws of the
+State of New York with principal offices at 500 Park Avenue, New York, NY 10022
+("Service Provider")
+
+RECITALS
+
+WHEREAS, Service Provider possesses expertise in artificial intelligence and
+document processing technologies; and
+
+WHEREAS, Client desires to engage Service Provider to provide certain AI-powered
+document processing and data extraction services;
+
+NOW, THEREFORE, in consideration of the mutual covenants set forth herein, the
+parties agree as follows:
+
+1. TERM
+   This Agreement shall commence on the Effective Date and continue for a period
+   of two (2) years, expiring on January 14, 2028, unless earlier terminated in
+   accordance with Section 8.
+
+2. SERVICES
+   Service Provider shall provide the following services:
+   (a) Cloud-based document ingestion and processing infrastructure
+   (b) AI model training and fine-tuning for document classification
+   (c) Structured data extraction using foundation models
+   (d) 24/7 monitoring and incident response
+
+3. SERVICE LEVEL AGREEMENT
+   Service Provider guarantees:
+   - 99.95% uptime for all production systems
+   - Maximum response time of 5 seconds for document processing
+   - Financial credits of 10% monthly fee for each 0.1% below SLA threshold
+
+4. DATA PROCESSING
+   - All data shall be processed within US-East regions
+   - Service Provider is SOC2 Type II and GDPR compliant
+   - Data retention period: 90 days after processing
+   - Client data is encrypted at rest (AES-256) and in transit (TLS 1.3)
+
+5. COMPENSATION
+   Client shall pay Service Provider a total of $450,000.00 USD over the term,
+   payable in equal monthly installments of $18,750.00 USD.
+
+6. INTELLECTUAL PROPERTY
+   Client retains full ownership of all processed documents, extracted data, and
+   any derivative works created from Client's data. Service Provider retains
+   ownership of its proprietary AI models and processing infrastructure.
+
+7. CONFIDENTIALITY
+   Both parties agree to maintain the confidentiality of all proprietary
+   information disclosed during the term of this Agreement.
+
+8. TERMINATION
+   Either party may terminate this Agreement:
+   (a) With 90 days written notice to the other party
+   (b) Immediately upon material breach that remains uncured for 30 days
+   (c) Immediately upon the other party's insolvency or bankruptcy
+
+9. GOVERNING LAW
+   This Agreement shall be governed by and construed in accordance with the laws
+   of the State of Delaware, United States.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+AgenticAutomation Inc.              Quantum AI Solutions Ltd.
+By: ___________________________      By: ___________________________
+Name: Sarah Chen                     Name: Marcus Wright
+Title: Chief Technology Officer      Title: VP of Enterprise Solutions
+Date: January 15, 2026               Date: January 15, 2026

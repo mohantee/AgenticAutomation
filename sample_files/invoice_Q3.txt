@@ -1,0 +1,34 @@
+INVOICE
+========================================
+Stellar Supplies Co.
+742 Innovation Blvd, Suite 300
+Austin, TX 78701
+========================================
+
+Invoice Number: INV-2026-Q3-0847
+Date: July 15, 2026
+Due Date: August 14, 2026
+
+BILL TO:
+AgenticAutomation Inc.
+100 Main St
+San Francisco, CA 94102
+
+ITEMS:
+---------------------------------------------------------------------------
+Description                              Qty    Unit Price     Amount
+---------------------------------------------------------------------------
+Cloud Compute (GPU Instances) — Jul 2026  120    $45.00       $5,400.00
+Enterprise Support License                  1  $2,500.00       $2,500.00
+Data Transfer (10TB egress)                10    $85.00         $850.00
+---------------------------------------------------------------------------
+
+                                          Subtotal:         $8,750.00
+                                          Tax (8.25%):        $721.88
+                                          ─────────────────────────────
+                                          TOTAL:            $9,471.88
+
+Payment Terms: Net 30
+Payment Method: Wire transfer to account ending in 4821
+
+Thank you for your business!

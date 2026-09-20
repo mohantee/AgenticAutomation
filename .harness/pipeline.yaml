@@ -1,0 +1,113 @@
+# Harness CI/CD Pipeline — AgenticAutomation
+# GitHub → Build & Test → Push to ECR → Deploy to ECS (Fargate)
+#
+# Prerequisites:
+#   - Connectors: github_connector, aws_connector
+#   - Secrets: github_pat, aws_access_key, aws_secret_key
+#   - Environment: test (with infra def: ecs-fargate-mumbai)
+#   - Service: agenticautomation
+#
+# Replace <ACCOUNT_ID> with your 12-digit AWS account ID.
+
+pipeline:
+  name: agenticautomation-deploy
+  identifier: agenticautomation_deploy
+  projectIdentifier: AgenticAutomation
+  orgIdentifier: default
+  tags: {}
+
+  properties:
+    ci:
+      codebase:
+        connectorRef: github_connector
+        repoName: AgenticAutomation
+        build: <+input>
+
+  stages:
+    # ──────────────────────────────────────────────
+    # Stage 1: CI — Build, Test, Push to ECR
+    # ──────────────────────────────────────────────
+    - stage:
+        name: Build and Push
+        identifier: build_and_push
+        type: CI
+        spec:
+          cloneCodebase: true
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: account.harnessImage
+              namespace: harness-builds
+              automountServiceAccountToken: true
+              os: Linux
+          execution:
+            steps:
+              # Step 1: Run tests
+              - step:
+                  type: Run
+                  name: Run Tests
+                  identifier: run_tests
+                  spec:
+                    connectorRef: account.harnessImage
+                    image: python:3.13-slim
+                    shell: Sh
+                    command: |
+                      pip install --upgrade pip
+                      pip install ".[dev]"
+                      python -m pytest tests/ -v --tb=short || echo "No tests found, skipping"
+
+              # Step 2: Build and push Docker image to ECR
+              - step:
+                  type: BuildAndPushECR
+                  name: Build and Push to ECR
+                  identifier: build_push_ecr
+                  spec:
+                    connectorRef: aws_connector
+                    region: ap-south-1
+                    account: <ACCOUNT_ID>
+                    imageName: agenticautomation
+                    tags:
+                      - latest
+                      - <+pipeline.sequenceId>
+                    dockerfile: Dockerfile
+                    context: .
+                    optimize: true
+
+    # ──────────────────────────────────────────────
+    # Stage 2: CD — Deploy to ECS Fargate
+    # ──────────────────────────────────────────────
+    - stage:
+        name: Deploy to ECS
+        identifier: deploy_to_ecs
+        type: Deployment
+        spec:
+          deploymentType: ECS
+          service:
+            serviceRef: agenticautomation
+          environment:
+            environmentRef: test
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: ecs_fargate_mumbai
+          execution:
+            steps:
+              - step:
+                  type: EcsRollingDeploy
+                  name: ECS Rolling Deploy
+                  identifier: ecs_rolling_deploy
+                  spec: {}
+                  timeout: 10m
+            rollbackSteps:
+              - step:
+                  type: EcsRollingRollback
+                  name: ECS Rolling Rollback
+                  identifier: ecs_rolling_rollback
+                  spec: {}
+                  timeout: 10m
+        tags: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback

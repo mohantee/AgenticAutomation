@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.git/
+.gitignore
+data/workflows/
+tests/
+.env
+.harness/
+deploy/
+*.md
+sample_files/

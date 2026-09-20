@@ -1,0 +1,46 @@
+{
+  "family": "agenticautomation",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/agenticautomation-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/agenticautomation-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "agenticautomation",
+      "image": "<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/agenticautomation:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "ENV", "value": "test" },
+        { "name": "STORAGE_BACKEND", "value": "s3" },
+        { "name": "AWS_REGION", "value": "ap-south-1" },
+        { "name": "S3_INPUT_BUCKET", "value": "agenticautomation-input-test" },
+        { "name": "S3_DATA_BUCKET", "value": "agenticautomation-data-test" },
+        { "name": "MOCK_BEDROCK", "value": "false" },
+        { "name": "PORT", "value": "5000" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 10
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/agenticautomation",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
