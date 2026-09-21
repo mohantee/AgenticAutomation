@@ -12,4 +12,5 @@ tests/
 .harness/
 deploy/
 *.md
+!README.md
 sample_files/
