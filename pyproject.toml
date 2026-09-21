@@ -19,6 +19,11 @@ dependencies = [
 agenticautomation = "agenticautomation:main"
 agenticAutomation = "agenticautomation:main"
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
