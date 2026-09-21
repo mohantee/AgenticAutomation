@@ -1,0 +1,84 @@
+name: CI - Test, Build & Push to ECR
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: agenticautomation
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Run Automated Tests
+  # ──────────────────────────────────────────────
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
+
+      - name: Run pytest
+        run: |
+          python -m pytest tests/ -v --tb=short
+
+  # ──────────────────────────────────────────────
+  # Job 2: Build & Push Docker Image to ECR
+  # ──────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push to ECR
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $REGISTRY/$ECR_REPOSITORY:latest -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $REGISTRY/$ECR_REPOSITORY:latest
+          docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "Successfully pushed:"
+          echo "  $REGISTRY/$ECR_REPOSITORY:latest"
+          echo "  $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Trigger Harness CD Pipeline (Optional)
+        if: ${{ env.HARNESS_WEBHOOK_URL != '' }}
+        env:
+          HARNESS_WEBHOOK_URL: ${{ secrets.HARNESS_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"imageTag\": \"${{ github.sha }}\"}" \
+            "$HARNESS_WEBHOOK_URL" || echo "Harness webhook notification skipped or not configured"

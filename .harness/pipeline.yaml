@@ -1,13 +1,12 @@
-# Harness CI/CD Pipeline — AgenticAutomation
-# GitHub → Build & Test → Push to ECR → Deploy to ECS (Fargate)
+# Harness CD Pipeline — AgenticAutomation
+# Deploy to ECS (Fargate)
 #
 # Prerequisites:
-#   - Connectors: github_connector, aws_connector
-#   - Secrets: github_pat, aws_access_key, aws_secret_key
-#   - Environment: test (with infra def: ecs-fargate-mumbai)
+#   - Connectors: aws_connector
+#   - Environment: test (with infra def: ecs_fargate_mumbai)
 #   - Service: agenticautomation
 #
-# Replace <ACCOUNT_ID> with your 12-digit AWS account ID.
+# Note: CI (Build, Test, Push to ECR) runs via GitHub Actions (.github/workflows/ci.yml).
 
 pipeline:
   name: agenticautomation-deploy
@@ -16,65 +15,16 @@ pipeline:
   orgIdentifier: default
   tags: {}
 
-  properties:
-    ci:
-      codebase:
-        connectorRef: github_connector
-        repoName: AgenticAutomation
-        build: <+input>
+  variables:
+    - name: IMAGE_TAG
+      type: String
+      description: "Docker image tag from ECR to deploy"
+      required: false
+      value: <+input>.default(latest)
 
   stages:
     # ──────────────────────────────────────────────
-    # Stage 1: CI — Build, Test, Push to ECR
-    # ──────────────────────────────────────────────
-    - stage:
-        name: Build and Push
-        identifier: build_and_push
-        type: CI
-        spec:
-          cloneCodebase: true
-          infrastructure:
-            type: KubernetesDirect
-            spec:
-              connectorRef: account.harnessImage
-              namespace: harness-builds
-              automountServiceAccountToken: true
-              os: Linux
-          execution:
-            steps:
-              # Step 1: Run tests
-              - step:
-                  type: Run
-                  name: Run Tests
-                  identifier: run_tests
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: python:3.13-slim
-                    shell: Sh
-                    command: |
-                      pip install --upgrade pip
-                      pip install ".[dev]"
-                      python -m pytest tests/ -v --tb=short || echo "No tests found, skipping"
-
-              # Step 2: Build and push Docker image to ECR
-              - step:
-                  type: BuildAndPushECR
-                  name: Build and Push to ECR
-                  identifier: build_push_ecr
-                  spec:
-                    connectorRef: aws_connector
-                    region: ap-south-1
-                    account: <ACCOUNT_ID>
-                    imageName: agenticautomation
-                    tags:
-                      - latest
-                      - <+pipeline.sequenceId>
-                    dockerfile: Dockerfile
-                    context: .
-                    optimize: true
-
-    # ──────────────────────────────────────────────
-    # Stage 2: CD — Deploy to ECS Fargate
+    # CD Stage: Deploy to ECS Fargate
     # ──────────────────────────────────────────────
     - stage:
         name: Deploy to ECS
