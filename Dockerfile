@@ -15,14 +15,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy packaging configuration and install dependencies + gunicorn
+# Copy packaging configuration, source code, and web UI assets
 COPY pyproject.toml README.md ./
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir "gunicorn>=22.0.0" .
-
-# Copy application source code and web UI assets
 COPY src/ ./src/
 COPY ui/ ./ui/
+
+# Install dependencies, gunicorn, and the application package
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir "gunicorn>=22.0.0" .
 
 # Health check for ECS
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
