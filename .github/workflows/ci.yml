@@ -1,4 +1,4 @@
-name: CI - Test, Build & Push to ECR
+name: CI/CD - Test, Build, Push & Deploy to ECS
 
 on:
   push:
@@ -10,6 +10,10 @@ on:
 env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY: agenticautomation
+  ECS_CLUSTER: agenticautomation-cluster
+  ECS_SERVICE: agenticautomation-service
+  ECS_TASK_DEFINITION: deploy/ecs-task-definition.json
+  CONTAINER_NAME: agenticautomation
 
 jobs:
   # ──────────────────────────────────────────────
@@ -38,10 +42,10 @@ jobs:
         run: uv run pytest tests/ -v --tb=short
 
   # ──────────────────────────────────────────────
-  # Job 2: Build & Push Docker Image to ECR
+  # Job 2: Build, Push to ECR & Deploy to ECS
   # ──────────────────────────────────────────────
-  build-and-push:
-    name: Build & Push to ECR
+  build-and-deploy:
+    name: Build, Push & Deploy to ECS
     needs: test
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -62,6 +66,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push Docker image
+        id: build-image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
@@ -69,15 +74,31 @@ jobs:
           docker build -t $REGISTRY/$ECR_REPOSITORY:latest -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$ECR_REPOSITORY:latest
           docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "Successfully pushed:"
           echo "  $REGISTRY/$ECR_REPOSITORY:latest"
           echo "  $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      - name: Trigger Harness CD Pipeline (Optional)
-        if: ${{ env.HARNESS_WEBHOOK_URL != '' }}
-        env:
-          HARNESS_WEBHOOK_URL: ${{ secrets.HARNESS_WEBHOOK_URL }}
+      - name: Substitute AWS Account ID in task definition
         run: |
-          curl -X POST -H "Content-Type: application/json" \
-            -d "{\"imageTag\": \"${{ github.sha }}\"}" \
-            "$HARNESS_WEBHOOK_URL" || echo "Harness webhook notification skipped or not configured"
+          ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"
+          if [ -z "$ACCOUNT_ID" ]; then
+            ACCOUNT_ID=$(echo "${{ steps.login-ecr.outputs.registry }}" | cut -d'.' -f1)
+          fi
+          sed -i "s/<AWS_ACCOUNT_ID>/$ACCOUNT_ID/g" ${{ env.ECS_TASK_DEFINITION }}
+
+      - name: Render Amazon ECS task definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
