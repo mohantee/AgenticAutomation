@@ -26,11 +26,24 @@ from agenticautomation.storage.store import get_store
 logger = logging.getLogger(__name__)
 
 
+def find_ui_dir() -> Path:
+    """Locate the ui/ directory across development and Docker container environments."""
+    candidates = [
+        Path.cwd() / "ui",                           # Docker container: /app/ui (WORKDIR is /app)
+        Path("/app/ui"),                             # Explicit Docker container path
+        Path(__file__).resolve().parents[3] / "ui",  # Local repo development: root/ui
+        Path(__file__).resolve().parents[2] / "ui",  # Editable install
+    ]
+    for candidate in candidates:
+        if candidate.is_dir() and (candidate / "index.html").exists():
+            return candidate
+    return Path.cwd() / "ui"
+
+
 def create_app() -> Flask:
     """Create and configure the Flask application."""
-    # Resolve the ui/ directory relative to the project root.
-    project_root = Path(__file__).resolve().parents[3]  # src/agenticautomation/api/ → project root
-    ui_dir = project_root / "ui"
+    ui_dir = find_ui_dir()
+    logger.info("Using UI directory: %s", ui_dir)
 
     app = Flask(__name__, static_folder=str(ui_dir), static_url_path="")
     CORS(app)
@@ -109,16 +122,24 @@ def create_app() -> Flask:
     @app.route("/")
     def serve_ui():
         """Serve the dashboard SPA."""
+        index_file = ui_dir / "index.html"
+        if not index_file.exists():
+            return jsonify({
+                "status": "healthy",
+                "service": "agenticautomation",
+                "message": f"API is running. UI assets not found at {ui_dir}"
+            }), 200
         return send_from_directory(str(ui_dir), "index.html")
 
     @app.errorhandler(404)
     def not_found(e):
         """Fallback for SPA routing — return index.html for unmatched routes."""
-        # If it's an API route, return JSON 404
         if request.path.startswith("/api/"):
             return jsonify({"error": "Not found"}), 404
-        # Otherwise, serve the SPA
-        return send_from_directory(str(ui_dir), "index.html")
+        index_file = ui_dir / "index.html"
+        if index_file.exists():
+            return send_from_directory(str(ui_dir), "index.html")
+        return jsonify({"error": "Not found", "path": request.path}), 404
 
     return app
 
