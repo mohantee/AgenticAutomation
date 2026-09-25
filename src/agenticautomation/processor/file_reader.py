@@ -60,12 +60,41 @@ def _read_s3(file_key: str) -> str:
     client = boto3.client("s3", region_name=config.aws_region)
     bucket = config.s3_input_bucket
 
-    logger.info("Reading S3 object: s3://%s/%s", bucket, file_key)
-    try:
-        response = client.get_object(Bucket=bucket, Key=file_key)
-        body = response["Body"].read()
-        return body.decode("utf-8")
-    except client.exceptions.NoSuchKey:
-        raise FileNotFoundError(f"S3 object not found: s3://{bucket}/{file_key}")
-    except Exception as e:
-        raise RuntimeError(f"Failed to read s3://{bucket}/{file_key}: {e}") from e
+    # Clean up file_key: strip s3:// URI prefix, normalize slashes, strip leading ./ and /
+    clean_key = file_key.strip()
+    if clean_key.startswith(f"s3://{bucket}/"):
+        clean_key = clean_key[len(f"s3://{bucket}/"):]
+    elif clean_key.startswith("s3://"):
+        parts = clean_key[5:].split("/", 1)
+        if len(parts) > 1:
+            clean_key = parts[1]
+
+    clean_key = clean_key.replace("\\", "/").lstrip("/")
+    while clean_key.startswith("./"):
+        clean_key = clean_key[2:].lstrip("/")
+
+    # Build list of key candidates to search for in S3:
+    # 1. exact normalized key (e.g. sample_files/contract_vendor_A.txt)
+    # 2. prefixed with sample_files/ if not already present
+    # 3. plain basename without directory prefix (e.g. contract_vendor_A.txt)
+    candidates = [clean_key]
+    basename = os.path.basename(clean_key)
+    if not clean_key.startswith("sample_files/"):
+        candidates.append(f"sample_files/{clean_key}")
+    if clean_key != basename and basename not in candidates:
+        candidates.append(basename)
+
+    last_err = None
+    for k in candidates:
+        logger.info("Reading S3 object: s3://%s/%s", bucket, k)
+        try:
+            response = client.get_object(Bucket=bucket, Key=k)
+            body = response["Body"].read()
+            return body.decode("utf-8")
+        except client.exceptions.NoSuchKey as err:
+            last_err = err
+            continue
+        except Exception as e:
+            raise RuntimeError(f"Failed to read s3://{bucket}/{k}: {e}") from e
+
+    raise FileNotFoundError(f"S3 object not found: s3://{bucket}/{clean_key} (tried keys: {candidates})")

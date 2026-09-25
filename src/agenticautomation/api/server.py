@@ -102,7 +102,10 @@ def create_app() -> Flask:
             return jsonify({"error": "Provide 'filename' or 'file_path'"}), 400
 
         if not file_path:
-            file_path = os.path.join(config.local_input_path, filename)
+            if config.storage_backend == "s3":
+                file_path = filename
+            else:
+                file_path = os.path.join(config.local_input_path, filename)
 
         try:
             workflow = simulate_trigger(file_path)
