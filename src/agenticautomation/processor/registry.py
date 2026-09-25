@@ -42,7 +42,7 @@ MODEL_REGISTRY: list[RegistryEntry] = [
     ),
     RegistryEntry(
         pattern="contract_*",
-        model_id="amazon.nova-lite-v1:0",
+        model_id="apac.amazon.nova-lite-v1:0",
         model_label="Nova Lite",
         prompt_template=(
             "You are a legal document analyst. Summarize this contract and extract key terms.\n"
@@ -62,7 +62,7 @@ MODEL_REGISTRY: list[RegistryEntry] = [
     ),
     RegistryEntry(
         pattern="report_*",
-        model_id="amazon.nova-micro-v1:0",
+        model_id="apac.amazon.nova-micro-v1:0",
         model_label="Nova Micro",
         prompt_template=(
             "You are a business intelligence analyst. Extract key metrics and findings from this report.\n"
@@ -81,7 +81,7 @@ MODEL_REGISTRY: list[RegistryEntry] = [
     # Fallback — catches any unmatched filename
     RegistryEntry(
         pattern="*",
-        model_id="amazon.nova-micro-v1:0",
+        model_id="apac.amazon.nova-micro-v1:0",
         model_label="Nova Micro",
         prompt_template=(
             "Extract all structured content from this document. "
