@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Agentic document processing workflow: S3/local file drop → Bedrock model invocation → structured extraction → UI dashboard"
 readme = "README.md"
 authors = [
-    { name = "Mohan", email = "mohanrajt05@gmail.com" }
+    { name = "Mohan", email = "[EMAIL_ADDRESS]" }
 ]
 requires-python = ">=3.13"
 dependencies = [
